@@ -9,7 +9,17 @@ import PantallaMaestro from "./src/pantallas/PantallaMaestro";
 import { ContextoAuthProvider } from "./src/contexto/ContextoAuth";
 import { ContextoTareasProvider } from "./src/contexto/ContextoTareas";
 
+import * as Notifications from "expo-notifications";
+
 const Stack = createNativeStackNavigator();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   return (
