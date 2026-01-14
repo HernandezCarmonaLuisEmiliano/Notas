@@ -7,20 +7,28 @@ import PantallaAlumno from "./src/pantallas/PantallaAlumno";
 import PantallaMaestro from "./src/pantallas/PantallaMaestro";
 
 import { ContextoAuthProvider } from "./src/contexto/ContextoAuth";
+import { ContextoTareasProvider } from "./src/contexto/ContextoTareas";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <ContextoAuthProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login" component={PantallaLogin} />
-          <Stack.Screen name="Registro" component={PantallaRegistro} />
-          <Stack.Screen name="Alumno" component={PantallaAlumno} />
-          <Stack.Screen name="Maestro" component={PantallaMaestro} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <ContextoTareasProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="Login" component={PantallaLogin} />
+            <Stack.Screen name="Registro" component={PantallaRegistro} />
+            <Stack.Screen name="Alumno" component={PantallaAlumno} />
+            <Stack.Screen name="Maestro" component={PantallaMaestro} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ContextoTareasProvider>
     </ContextoAuthProvider>
   );
 }

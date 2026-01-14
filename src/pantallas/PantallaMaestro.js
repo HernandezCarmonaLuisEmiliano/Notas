@@ -1,66 +1,79 @@
 import {
-  SafeAreaView,
+  StyleSheet,
   View,
   Text,
   TextInput,
   Button,
   FlatList,
-  StyleSheet,
 } from "react-native";
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { ContextoAuth } from "../contexto/ContextoAuth";
+import { ContextoTareas } from "../contexto/ContextoTareas";
 
-export default function PantallaMaestro() {
-  const [nuevaTarea, setNuevaTarea] = useState("");
-  const [tareas, setTareas] = useState([]);
+export default function PantallaMaestro({ navigation }) {
+  const { usuario, cerrarSesion } = useContext(ContextoAuth);
+  const { tareas, agregarTarea } = useContext(ContextoTareas);
 
-  const agregarTarea = () => {
-    if (nuevaTarea.trim() === "") return;
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
 
-    setTareas([
-      ...tareas,
-      {
-        id: Date.now().toString(),
-        titulo: nuevaTarea,
-      },
-    ]);
-    setNuevaTarea("");
+  const crearTarea = () => {
+    if (!titulo || !descripcion) return;
+
+    agregarTarea(titulo, descripcion);
+    setTitulo("");
+    setDescripcion("");
   };
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
+    <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>Panel del Maestro</Text>
+      <Text style={estilos.texto}>
+        Bienvenido: {usuario?.correo}
+      </Text>
 
-      <View style={estilos.formulario}>
-        <TextInput
-          style={estilos.input}
-          placeholder="Escribe la nueva tarea"
-          value={nuevaTarea}
-          onChangeText={setNuevaTarea}
-        />
+      <Text style={estilos.subtitulo}>Nueva tarea</Text>
 
-        <View style={estilos.boton}>
-          <Button title="Agregar tarea" onPress={agregarTarea} />
-        </View>
-      </View>
+      <TextInput
+        placeholder="Título"
+        style={estilos.input}
+        value={titulo}
+        onChangeText={setTitulo}
+      />
+
+      <TextInput
+        placeholder="Descripción"
+        style={estilos.input}
+        value={descripcion}
+        onChangeText={setDescripcion}
+      />
+
+      <Button title="Agregar tarea" onPress={crearTarea} />
 
       <Text style={estilos.subtitulo}>Tareas creadas</Text>
 
       <FlatList
         data={tareas}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={estilos.lista}
         renderItem={({ item }) => (
-          <View style={estilos.tarjeta}>
-            <Text style={estilos.textoTarea}>📘 {item.titulo}</Text>
+          <View style={estilos.tarea}>
+            <Text style={estilos.tituloTarea}>{item.titulo}</Text>
+            <Text>{item.descripcion}</Text>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={estilos.vacio}>
-            No hay tareas aún
-          </Text>
-        }
+        ListEmptyComponent={<Text>No hay tareas aún</Text>}
       />
-    </SafeAreaView>
+
+      <View style={estilos.boton}>
+        <Button
+          title="Cerrar sesión"
+          onPress={() => {
+            cerrarSesion();
+            navigation.replace("Login");
+          }}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -68,49 +81,38 @@ const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
   },
   titulo: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: "center",
   },
-  formulario: {
-    marginBottom: 20,
+  subtitulo: {
+    fontSize: 18,
+    marginVertical: 10,
+  },
+  texto: {
+    textAlign: "center",
+    marginBottom: 10,
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 6,
     padding: 10,
     marginBottom: 10,
+    borderRadius: 5,
+  },
+  tarea: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  tituloTarea: {
+    fontWeight: "bold",
   },
   boton: {
-    marginTop: 5,
-  },
-  subtitulo: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  lista: {
-    paddingBottom: 20,
-  },
-  tarjeta: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 6,
-    padding: 15,
-    marginBottom: 10,
-    backgroundColor: "#f9f9f9",
-  },
-  textoTarea: {
-    fontSize: 16,
-  },
-  vacio: {
-    textAlign: "center",
     marginTop: 20,
-    color: "#777",
   },
 });

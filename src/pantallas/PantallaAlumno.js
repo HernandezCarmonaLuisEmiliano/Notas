@@ -1,68 +1,41 @@
-import {
-  SafeAreaView,
-  View,
-  Text,
-  FlatList,
-  Button,
-  StyleSheet,
-} from "react-native";
-import { useState } from "react";
+import { StyleSheet, View, Text, Button, FlatList } from "react-native";
+import { useContext } from "react";
+import { ContextoAuth } from "../contexto/ContextoAuth";
+import { ContextoTareas } from "../contexto/ContextoTareas";
 
-export default function PantallaAlumno() {
-  const [tareas, setTareas] = useState([
-    { id: "1", titulo: "Matemáticas", frecuencia: "Diaria" },
-    { id: "2", titulo: "Historia", frecuencia: "Semanal" },
-    { id: "3", titulo: "Ciencias", frecuencia: "Mensual" },
-  ]);
-
-  const cambiarFrecuencia = (id) => {
-    setTareas((prev) =>
-      prev.map((tarea) =>
-        tarea.id === id
-          ? {
-              ...tarea,
-              frecuencia:
-                tarea.frecuencia === "Diaria"
-                  ? "Semanal"
-                  : tarea.frecuencia === "Semanal"
-                  ? "Mensual"
-                  : "Diaria",
-            }
-          : tarea
-      )
-    );
-  };
+export default function PantallaAlumno({ navigation }) {
+  const { usuario, cerrarSesion } = useContext(ContextoAuth);
+  const { tareas } = useContext(ContextoTareas);
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
-      <Text style={estilos.titulo}>Mis Tareas</Text>
+    <View style={estilos.contenedor}>
+      <Text style={estilos.titulo}>Panel del Alumno</Text>
+      <Text>Bienvenido: {usuario?.correo}</Text>
+
+      <Text style={estilos.subtitulo}>Tareas</Text>
 
       <FlatList
         data={tareas}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={estilos.lista}
         renderItem={({ item }) => (
-          <View style={estilos.tarjeta}>
-            <Text style={estilos.textoTitulo}>📘 {item.titulo}</Text>
-            <Text style={estilos.textoFrecuencia}>
-              🔔 Avisos: {item.frecuencia}
-            </Text>
-
-            <View style={estilos.boton}>
-              <Button
-                title="Cambiar frecuencia"
-                onPress={() => cambiarFrecuencia(item.id)}
-              />
-            </View>
+          <View style={estilos.tarea}>
+            <Text style={estilos.tituloTarea}>{item.titulo}</Text>
+            <Text>{item.descripcion}</Text>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={estilos.vacio}>
-            No hay tareas asignadas
-          </Text>
-        }
+        ListEmptyComponent={<Text>No hay tareas aún</Text>}
       />
-    </SafeAreaView>
+
+      <View style={estilos.boton}>
+        <Button
+          title="Cerrar sesión"
+          onPress={() => {
+            cerrarSesion();
+            navigation.replace("Login");
+          }}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -70,41 +43,27 @@ const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
   },
   titulo: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: "center",
   },
-  lista: {
-    paddingBottom: 20,
+  subtitulo: {
+    fontSize: 18,
+    marginVertical: 10,
   },
-  tarjeta: {
+  tarea: {
+    padding: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 6,
-    padding: 15,
-    marginBottom: 12,
-    backgroundColor: "#f9f9f9",
-  },
-  textoTitulo: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  textoFrecuencia: {
-    fontSize: 14,
+    borderColor: "#ccc",
+    borderRadius: 5,
     marginBottom: 10,
-    color: "#555",
+  },
+  tituloTarea: {
+    fontWeight: "bold",
   },
   boton: {
-    marginTop: 5,
-  },
-  vacio: {
-    textAlign: "center",
     marginTop: 20,
-    color: "#777",
   },
 });
