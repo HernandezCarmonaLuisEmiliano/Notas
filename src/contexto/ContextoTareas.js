@@ -10,8 +10,23 @@ export function ContextoTareasProvider({ children }) {
       id: Date.now().toString(),
       titulo,
       descripcion,
+      frecuencia: "Diario", // por defecto
     };
     setTareas([...tareas, nuevaTarea]);
+  };
+
+  const eliminarTarea = (id) => {
+    setTareas(tareas.filter((tarea) => tarea.id !== id));
+  };
+
+  const cambiarFrecuencia = (id, nuevaFrecuencia) => {
+    setTareas(
+      tareas.map((tarea) =>
+        tarea.id === id
+          ? { ...tarea, frecuencia: nuevaFrecuencia }
+          : tarea
+      )
+    );
   };
 
   return (
@@ -19,6 +34,8 @@ export function ContextoTareasProvider({ children }) {
       value={{
         tareas,
         agregarTarea,
+        eliminarTarea,
+        cambiarFrecuencia,
       }}
     >
       {children}

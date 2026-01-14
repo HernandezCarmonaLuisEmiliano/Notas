@@ -1,18 +1,25 @@
-import { StyleSheet, View, Text, Button, FlatList } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Button,
+  FlatList,
+} from "react-native";
 import { useContext } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
 import { ContextoTareas } from "../contexto/ContextoTareas";
 
 export default function PantallaAlumno({ navigation }) {
   const { usuario, cerrarSesion } = useContext(ContextoAuth);
-  const { tareas } = useContext(ContextoTareas);
+  const { tareas, cambiarFrecuencia } =
+    useContext(ContextoTareas);
+
+  const opciones = ["Diario", "Semanal", "Nunca"];
 
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>Panel del Alumno</Text>
       <Text>Bienvenido: {usuario?.correo}</Text>
-
-      <Text style={estilos.subtitulo}>Tareas</Text>
 
       <FlatList
         data={tareas}
@@ -21,49 +28,41 @@ export default function PantallaAlumno({ navigation }) {
           <View style={estilos.tarea}>
             <Text style={estilos.tituloTarea}>{item.titulo}</Text>
             <Text>{item.descripcion}</Text>
+            <Text>Frecuencia: {item.frecuencia}</Text>
+
+            {opciones.map((opcion) => (
+              <Button
+                key={opcion}
+                title={opcion}
+                onPress={() =>
+                  cambiarFrecuencia(item.id, opcion)
+                }
+              />
+            ))}
           </View>
         )}
-        ListEmptyComponent={<Text>No hay tareas aún</Text>}
+        ListEmptyComponent={<Text>No hay tareas</Text>}
       />
 
-      <View style={estilos.boton}>
-        <Button
-          title="Cerrar sesión"
-          onPress={() => {
-            cerrarSesion();
-            navigation.replace("Login");
-          }}
-        />
-      </View>
+      <Button
+        title="Cerrar sesión"
+        onPress={() => {
+          cerrarSesion();
+          navigation.replace("Login");
+        }}
+      />
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    padding: 20,
-  },
-  titulo: {
-    fontSize: 24,
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  subtitulo: {
-    fontSize: 18,
-    marginVertical: 10,
-  },
+  contenedor: { flex: 1, padding: 20 },
+  titulo: { fontSize: 24, textAlign: "center", marginBottom: 10 },
   tarea: {
-    padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
+    padding: 10,
     marginBottom: 10,
+    borderRadius: 5,
   },
-  tituloTarea: {
-    fontWeight: "bold",
-  },
-  boton: {
-    marginTop: 20,
-  },
+  tituloTarea: { fontWeight: "bold" },
 });
