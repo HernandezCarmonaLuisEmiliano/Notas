@@ -1,23 +1,26 @@
-import { useContext } from "react";
-import { ProveedorAuth, ContextoAuth } from "./src/contexto/ContextoAuth";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
 import PantallaLogin from "./src/pantallas/PantallaLogin";
-import PantallaMaestro from "./src/pantallas/PantallaMaestro";
+import PantallaRegistro from "./src/pantallas/PantallaRegistro";
 import PantallaAlumno from "./src/pantallas/PantallaAlumno";
+import PantallaMaestro from "./src/pantallas/PantallaMaestro";
 
-const Principal = () => {
-  const { usuario } = useContext(ContextoAuth);
+import { ContextoAuthProvider } from "./src/contexto/ContextoAuth";
 
-  if (!usuario) return <PantallaLogin />;
-
-  return usuario.rol === "maestro"
-    ? <PantallaMaestro />
-    : <PantallaAlumno />;
-};
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <ProveedorAuth>
-      <Principal />
-    </ProveedorAuth>
+    <ContextoAuthProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Login" component={PantallaLogin} />
+          <Stack.Screen name="Registro" component={PantallaRegistro} />
+          <Stack.Screen name="Alumno" component={PantallaAlumno} />
+          <Stack.Screen name="Maestro" component={PantallaMaestro} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ContextoAuthProvider>
   );
 }
