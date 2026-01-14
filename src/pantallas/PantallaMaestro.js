@@ -5,6 +5,7 @@ import {
   TextInput,
   Button,
   FlatList,
+  Alert,
 } from "react-native";
 import { useContext, useState } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
@@ -19,7 +20,14 @@ export default function PantallaMaestro({ navigation }) {
   const [descripcion, setDescripcion] = useState("");
 
   const crearTarea = () => {
-    if (!titulo || !descripcion) return;
+    if (!titulo || !descripcion) {
+      Alert.alert(
+        "Error",
+        "El título y la descripción son obligatorios"
+      );
+      return;
+    }
+
     agregarTarea(titulo, descripcion);
     setTitulo("");
     setDescripcion("");
@@ -28,19 +36,18 @@ export default function PantallaMaestro({ navigation }) {
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>Panel del Maestro</Text>
-      <Text>Bienvenido: {usuario?.correo}</Text>
 
-      <Text style={estilos.subtitulo}>Nueva tarea</Text>
+      <Text style={estilos.subtitulo}>Crear nueva tarea</Text>
 
       <TextInput
-        placeholder="Título"
+        placeholder="Título de la tarea"
         style={estilos.input}
         value={titulo}
         onChangeText={setTitulo}
       />
 
       <TextInput
-        placeholder="Descripción"
+        placeholder="Descripción de la tarea"
         style={estilos.input}
         value={descripcion}
         onChangeText={setDescripcion}
@@ -55,45 +62,87 @@ export default function PantallaMaestro({ navigation }) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={estilos.tarea}>
-            <Text style={estilos.tituloTarea}>{item.titulo}</Text>
+            <Text style={estilos.tituloTarea}>
+              {item.titulo}
+            </Text>
             <Text>{item.descripcion}</Text>
 
-            <Button
-              title="Eliminar"
-              color="red"
-              onPress={() => eliminarTarea(item.id)}
-            />
+            <View style={estilos.botonEliminar}>
+              <Button
+                title="Eliminar"
+                color="red"
+                onPress={() =>
+                  Alert.alert(
+                    "Confirmar",
+                    "¿Deseas eliminar esta tarea?",
+                    [
+                      { text: "Cancelar" },
+                      {
+                        text: "Eliminar",
+                        onPress: () =>
+                          eliminarTarea(item.id),
+                      },
+                    ]
+                  )
+                }
+              />
+            </View>
           </View>
         )}
-        ListEmptyComponent={<Text>No hay tareas</Text>}
+        ListEmptyComponent={
+          <Text>No hay tareas creadas</Text>
+        }
       />
 
-      <Button
-        title="Cerrar sesión"
-        onPress={() => {
-          cerrarSesion();
-          navigation.replace("Login");
-        }}
-      />
+      <View style={estilos.cerrarSesion}>
+        <Button
+          title="Cerrar sesión"
+          onPress={() => {
+            cerrarSesion();
+            navigation.replace("Login");
+          }}
+        />
+      </View>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, padding: 20 },
-  titulo: { fontSize: 24, textAlign: "center", marginBottom: 10 },
-  subtitulo: { fontSize: 18, marginVertical: 10 },
+  contenedor: {
+    flex: 1,
+    padding: 20,
+  },
+  titulo: {
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  subtitulo: {
+    fontSize: 18,
+    marginTop: 15,
+    marginBottom: 5,
+  },
   input: {
     borderWidth: 1,
+    borderColor: "#ccc",
     padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    marginBottom: 10,
   },
   tarea: {
     borderWidth: 1,
+    borderColor: "#ccc",
     padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    marginBottom: 10,
   },
-  tituloTarea: { fontWeight: "bold" },
+  tituloTarea: {
+    fontWeight: "bold",
+  },
+  botonEliminar: {
+    marginTop: 5,
+  },
+  cerrarSesion: {
+    marginTop: 10,
+  },
 });

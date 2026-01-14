@@ -1,27 +1,23 @@
-import { StyleSheet, View, Text, TextInput, Button, Alert } from "react-native";
-import { useState } from "react";
+import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { useState, useContext } from "react";
+import { ContextoAuth } from "../contexto/ContextoAuth";
 
 export default function PantallaRegistro({ navigation }) {
+  const { registrar } = useContext(ContextoAuth);
+
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
-  const [contrasena, setContrasena] = useState("");
+  const [password, setPassword] = useState("");
+  const [rol, setRol] = useState("alumno");
 
-  const manejarRegistro = () => {
-    if (!nombre || !correo || !contrasena) {
-      Alert.alert("Error", "Completa todos los campos");
-      return;
+  const handleRegistro = async () => {
+    try {
+      await registrar(nombre, correo, password, rol);
+      alert("Usuario registrado correctamente");
+      navigation.goBack();
+    } catch (error) {
+      alert(error.message);
     }
-
-    Alert.alert(
-      "Registro exitoso",
-      "Ahora puedes iniciar sesión",
-      [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
   };
 
   return (
@@ -29,30 +25,37 @@ export default function PantallaRegistro({ navigation }) {
       <Text style={estilos.titulo}>Registro</Text>
 
       <TextInput
-        placeholder="Nombre completo"
+        placeholder="Nombre"
         style={estilos.input}
         value={nombre}
         onChangeText={setNombre}
       />
 
       <TextInput
-        placeholder="Correo electrónico"
+        placeholder="Correo"
         style={estilos.input}
         value={correo}
         onChangeText={setCorreo}
-        keyboardType="email-address"
-        autoCapitalize="none"
       />
 
       <TextInput
         placeholder="Contraseña"
-        style={estilos.input}
-        value={contrasena}
-        onChangeText={setContrasena}
         secureTextEntry
+        style={estilos.input}
+        value={password}
+        onChangeText={setPassword}
       />
 
-      <Button title="Registrarse" onPress={manejarRegistro} />
+      <Button
+        title={`Rol: ${rol}`}
+        onPress={() =>
+          setRol(rol === "alumno" ? "maestro" : "alumno")
+        }
+      />
+
+      <View style={{ marginTop: 15 }}>
+        <Button title="Registrarse" onPress={handleRegistro} />
+      </View>
     </View>
   );
 }
@@ -60,19 +63,18 @@ export default function PantallaRegistro({ navigation }) {
 const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
-    padding: 20,
     justifyContent: "center",
+    padding: 20,
   },
   titulo: {
     fontSize: 24,
-    marginBottom: 30,
+    marginBottom: 20,
     textAlign: "center",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
     padding: 10,
-    borderRadius: 5,
     marginBottom: 15,
+    borderRadius: 5,
   },
 });
