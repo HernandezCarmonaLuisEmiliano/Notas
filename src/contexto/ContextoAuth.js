@@ -1,67 +1,77 @@
-import { createContext, useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, useState } from "react";
+import { supabase } from "../supabase/supabase";
 
 export const ContextoAuth = createContext();
 
 export function ContextoAuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
-  const [usuariosRegistrados, setUsuariosRegistrados] = useState([]);
 
-  useEffect(() => {
-    cargarUsuarios();
-  }, []);
-
-  const cargarUsuarios = async () => {
-    const data = await AsyncStorage.getItem("usuarios");
-    if (data) {
-      setUsuariosRegistrados(JSON.parse(data));
-    }
-  };
-
-  // REGISTRO
-  const registrar = async (nombre, correo, password, rol) => {
-    if (!nombre || !correo || !password) {
-      throw new Error("Completa todos los campos");
-    }
-
-    const existe = usuariosRegistrados.some(
-      (u) => u.correo === correo
-    );
-
-    if (existe) {
-      throw new Error("El correo ya está registrado");
-    }
-
-    const nuevoUsuario = { nombre, correo, password, rol };
-    const nuevosUsuarios = [...usuariosRegistrados, nuevoUsuario];
-
-    await AsyncStorage.setItem("usuarios", JSON.stringify(nuevosUsuarios));
-    setUsuariosRegistrados(nuevosUsuarios);
-  };
-
-  // LOGIN
-  const iniciarSesion = async (correo, password) => {
+  // ======================
+  // INICIAR SESIÓN
+  // ======================
+  const iniciarSesion = async (correo, password, navigation) => {
     if (!correo || !password) {
+      alert("Completa todos los campos");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("usuario")
+      .select("*")
+      .eq("correo", correo.trim())
+      .eq("password", password.trim())
+      .maybeSingle(); // 👈 IMPORTANTE
+
+    if (error || !data) {
+      alert("Correo o contraseña incorrectos");
+      return;
+    }
+
+    setUsuario(data);
+
+    navigation.replace(
+      data.rol === "maestro" ? "Maestro" : "Alumno"
+    );
+  };
+
+  // ======================
+  // REGISTRO
+  // ======================
+  const registro = async (nombre, correo, password, rol) => {
+    if (!nombre || !correo || !password || !rol) {
       throw new Error("Completa todos los campos");
     }
 
-    if (usuariosRegistrados.length === 0) {
-      throw new Error("No hay usuarios registrados");
+    // 🔎 Verificar si el correo ya existe
+    const { data: existente } = await supabase
+      .from("usuario")
+      .select("id")
+      .eq("correo", correo.trim())
+      .maybeSingle();
+
+    if (existente) {
+      throw new Error("Ese correo ya está registrado");
     }
 
-    const usuarioEncontrado = usuariosRegistrados.find(
-      (u) => u.correo === correo && u.password === password
-    );
+    // 📝 Registrar usuario
+    const { error } = await supabase.from("usuario").insert([
+      {
+        nombre: nombre.trim(),
+        correo: correo.trim(),
+        password: password.trim(),
+        rol,
+      },
+    ]);
 
-    if (!usuarioEncontrado) {
-      throw new Error("Correo o contraseña incorrectos");
+    if (error) {
+      throw new Error("Error al registrar usuario");
     }
-
-    setUsuario(usuarioEncontrado);
-    return usuarioEncontrado;
   };
 
-  const cerrarSesion = async () => {
+  // ======================
+  // CERRAR SESIÓN
+  // ======================
+  const cerrarSesion = () => {
     setUsuario(null);
   };
 
@@ -69,8 +79,8 @@ export function ContextoAuthProvider({ children }) {
     <ContextoAuth.Provider
       value={{
         usuario,
-        registrar,
         iniciarSesion,
+        registro,
         cerrarSesion,
       }}
     >

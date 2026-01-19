@@ -1,99 +1,100 @@
-import { createContext, useState } from "react";
-import {
-  programarNotificacion,
-  cancelarNotificacion,
-} from "../utilidades/notificaciones";
+import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../supabase/supabase";
+import { ContextoAuth } from "./ContextoAuth";
 
 export const ContextoTareas = createContext();
 
 export function ContextoTareasProvider({ children }) {
+  const { usuario } = useContext(ContextoAuth);
   const [tareas, setTareas] = useState([]);
+  const [cargando, setCargando] = useState(false);
 
   // ======================
-  // CREAR TAREA (MAESTRO)
+  // CARGAR TAREAS AL LOGIN
   // ======================
-  const agregarTarea = (titulo, descripcion) => {
-    const nuevaTarea = {
-      id: Date.now().toString(),
-      titulo,
-      descripcion,
-      frecuencia: "Nunca",
-      notificacionId: null,
-    };
+  useEffect(() => {
+    if (usuario?.id) {
+      obtenerTareas();
+    } else {
+      setTareas([]);
+    }
+  }, [usuario]);
 
-    setTareas((prev) => [...prev, nuevaTarea]);
+  // ======================
+  // OBTENER TAREAS
+  // ======================
+  const obtenerTareas = async () => {
+    setCargando(true);
+
+    const { data, error } = await supabase
+      .from("tareas")
+      .select("*")
+      .eq("usuario_id", usuario.id)
+      .order("created_at", { ascending: false });
+
+    setCargando(false);
+
+    if (error) {
+      console.error("❌ Error al cargar tareas:", error);
+      alert("Error al cargar tareas");
+      return;
+    }
+
+    setTareas(data || []);
   };
 
   // ======================
-  // ELIMINAR TAREA (MAESTRO)
+  // AGREGAR TAREA
+  // ======================
+  const agregarTarea = async (titulo, descripcion) => {
+    if (!titulo || !descripcion) {
+      alert("Completa todos los campos");
+      return;
+    }
+
+    const { error } = await supabase.from("tareas").insert([
+      {
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        usuario_id: usuario.id,
+      },
+    ]);
+
+    if (error) {
+      console.error("❌ Error al guardar tarea:", error);
+      alert("Error al guardar tarea");
+      return;
+    }
+
+    obtenerTareas(); // 🔄 refrescar lista
+  };
+
+  // ======================
+  // ELIMINAR TAREA
   // ======================
   const eliminarTarea = async (id) => {
-    setTareas((prev) => {
-      const tarea = prev.find((t) => t.id === id);
+    const { error } = await supabase
+      .from("tareas")
+      .delete()
+      .eq("id", id);
 
-      if (tarea?.notificacionId) {
-        cancelarNotificacion(tarea.notificacionId);
-      }
+    if (error) {
+      console.error("❌ Error al eliminar tarea:", error);
+      alert("Error al eliminar tarea");
+      return;
+    }
 
-      return prev.filter((t) => t.id !== id);
-    });
-  };
-
-  // ======================
-  // CAMBIAR FRECUENCIA (ALUMNO)
-  // ======================
-  const cambiarFrecuencia = (id, nuevaFrecuencia) => {
-    setTareas((prev) => {
-      const tarea = prev.find((t) => t.id === id);
-
-      // Cancelar notificación anterior
-      if (tarea?.notificacionId) {
-        cancelarNotificacion(tarea.notificacionId);
-      }
-
-      // Si es "Nunca", solo cancelar
-      if (nuevaFrecuencia === "Nunca") {
-        return prev.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                frecuencia: "Nunca",
-                notificacionId: null,
-              }
-            : t
-        );
-      }
-
-      // Programar nueva notificación
-      programarNotificacion(
-        "Recordatorio de tarea",
-        tarea.titulo,
-        nuevaFrecuencia
-      ).then((nuevaNotificacionId) => {
-        setTareas((actual) =>
-          actual.map((t) =>
-            t.id === id
-              ? { ...t, notificacionId: nuevaNotificacionId }
-              : t
-          )
-        );
-      });
-
-      return prev.map((t) =>
-        t.id === id
-          ? { ...t, frecuencia: nuevaFrecuencia }
-          : t
-      );
-    });
+    setTareas((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
     <ContextoTareas.Provider
       value={{
         tareas,
+        cargarTareas: obtenerTareas,
         agregarTarea,
         eliminarTarea,
-        cambiarFrecuencia,
+        cargando,
       }}
     >
       {children}

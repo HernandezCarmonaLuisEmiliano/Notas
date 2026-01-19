@@ -3,7 +3,7 @@ import { useState, useContext } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
 
 export default function PantallaRegistro({ navigation }) {
-  const { registrar } = useContext(ContextoAuth);
+  const { registro } = useContext(ContextoAuth);
 
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
@@ -11,14 +11,9 @@ export default function PantallaRegistro({ navigation }) {
   const [rol, setRol] = useState("alumno");
 
   const handleRegistro = async () => {
-    try {
-      await registrar(nombre, correo, password, rol);
-      alert("Usuario registrado correctamente");
-      navigation.goBack();
-    } catch (error) {
-      alert(error.message);
-    }
+  registro(nombre, correo, password, rol, navigation);
   };
+
 
   return (
     <View style={estilos.contenedor}>

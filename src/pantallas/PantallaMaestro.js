@@ -20,7 +20,7 @@ export default function PantallaMaestro({ navigation }) {
   const [descripcion, setDescripcion] = useState("");
 
   const crearTarea = () => {
-    if (!titulo || !descripcion) {
+    if (!titulo.trim() || !descripcion.trim()) {
       Alert.alert(
         "Error",
         "El título y la descripción son obligatorios"
@@ -28,9 +28,14 @@ export default function PantallaMaestro({ navigation }) {
       return;
     }
 
-    agregarTarea(titulo, descripcion);
+    agregarTarea(titulo.trim(), descripcion.trim());
     setTitulo("");
     setDescripcion("");
+  };
+
+  const handleCerrarSesion = () => {
+    cerrarSesion();
+    navigation.replace("Login");
   };
 
   return (
@@ -59,12 +64,10 @@ export default function PantallaMaestro({ navigation }) {
 
       <FlatList
         data={tareas}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={estilos.tarea}>
-            <Text style={estilos.tituloTarea}>
-              {item.titulo}
-            </Text>
+            <Text style={estilos.tituloTarea}>{item.titulo}</Text>
             <Text>{item.descripcion}</Text>
 
             <View style={estilos.botonEliminar}>
@@ -76,11 +79,11 @@ export default function PantallaMaestro({ navigation }) {
                     "Confirmar",
                     "¿Deseas eliminar esta tarea?",
                     [
-                      { text: "Cancelar" },
+                      { text: "Cancelar", style: "cancel" },
                       {
                         text: "Eliminar",
-                        onPress: () =>
-                          eliminarTarea(item.id),
+                        style: "destructive",
+                        onPress: () => eliminarTarea(item.id),
                       },
                     ]
                   )
@@ -97,10 +100,8 @@ export default function PantallaMaestro({ navigation }) {
       <View style={estilos.cerrarSesion}>
         <Button
           title="Cerrar sesión"
-          onPress={() => {
-            cerrarSesion();
-            navigation.replace("Login");
-          }}
+          color="#444"
+          onPress={handleCerrarSesion}
         />
       </View>
     </View>
@@ -143,6 +144,6 @@ const estilos = StyleSheet.create({
     marginTop: 5,
   },
   cerrarSesion: {
-    marginTop: 10,
+    marginTop: 15,
   },
 });

@@ -19,7 +19,7 @@ export default function PantallaAlumno({ navigation }) {
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>Panel del Alumno</Text>
-      <Text>Bienvenido: {usuario?.correo}</Text>
+      <Text>Bienvenido: {usuario?.nombre}</Text>
 
       <FlatList
         data={tareas}

@@ -1,50 +1,48 @@
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
-import { useState, useContext } from "react";
+import { useContext, useState } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
+import { useNavigation } from "@react-navigation/native";
 
-export default function PantallaLogin({ navigation }) {
+export default function PantallaLogin() {
   const { iniciarSesion } = useContext(ContextoAuth);
+  const navigation = useNavigation();
+
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
-    try {
-      const usuario = await iniciarSesion(correo, password);
-
-      if (usuario.rol === "maestro") {
-        navigation.replace("Maestro");
-      } else {
-        navigation.replace("Alumno");
-      }
-    } catch (error) {
-      alert(error.message);
-    }
+  const handleLogin = () => {
+    iniciarSesion(correo, password, navigation);
   };
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.titulo}>Iniciar Sesión</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Iniciar Sesión</Text>
 
       <TextInput
         placeholder="Correo"
-        style={estilos.input}
+        style={styles.input}
         value={correo}
         onChangeText={setCorreo}
+        autoCapitalize="none"
+        keyboardType="email-address"
       />
 
       <TextInput
         placeholder="Contraseña"
-        secureTextEntry
-        style={estilos.input}
+        style={styles.input}
         value={password}
         onChangeText={setPassword}
+        secureTextEntry
       />
 
-      <Button title="Iniciar Sesión" onPress={handleLogin} />
+      <View style={styles.boton}>
+        <Button title="Iniciar Sesión" onPress={handleLogin} />
+      </View>
 
-      <View style={{ marginTop: 15 }}>
+      <View style={styles.botonSecundario}>
         <Button
           title="Registrarse"
+          color="#666"
           onPress={() => navigation.navigate("Registro")}
         />
       </View>
@@ -52,21 +50,28 @@ export default function PantallaLogin({ navigation }) {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: {
+const styles = StyleSheet.create({
+  container: {
     flex: 1,
     justifyContent: "center",
     padding: 20,
   },
-  titulo: {
+  title: {
     fontSize: 24,
-    marginBottom: 20,
     textAlign: "center",
+    marginBottom: 25,
   },
   input: {
     borderWidth: 1,
+    borderColor: "#ccc",
     padding: 10,
     marginBottom: 15,
     borderRadius: 5,
+  },
+  boton: {
+    marginTop: 10,
+  },
+  botonSecundario: {
+    marginTop: 15,
   },
 });
