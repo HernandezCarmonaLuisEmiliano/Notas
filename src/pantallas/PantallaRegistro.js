@@ -11,9 +11,14 @@ export default function PantallaRegistro({ navigation }) {
   const [rol, setRol] = useState("alumno");
 
   const handleRegistro = async () => {
-  registro(nombre, correo, password, rol, navigation);
+    try {
+      await registro(nombre, correo, password, rol);
+      alert("Usuario registrado correctamente");
+      navigation.goBack();
+    } catch (error) {
+      alert(error.message);
+    }
   };
-
 
   return (
     <View style={estilos.contenedor}>
@@ -31,6 +36,8 @@ export default function PantallaRegistro({ navigation }) {
         style={estilos.input}
         value={correo}
         onChangeText={setCorreo}
+        autoCapitalize="none"
+        keyboardType="email-address"
       />
 
       <TextInput

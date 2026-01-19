@@ -6,6 +6,11 @@ export const ContextoAuth = createContext();
 export function ContextoAuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
 
+  const correoValido = (correo) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(correo);
+  };
+
   const iniciarSesion = async (correo, password, navigation) => {
     if (!correo || !password) {
       alert("Completa todos los campos");
@@ -25,7 +30,6 @@ export function ContextoAuthProvider({ children }) {
     }
 
     setUsuario(data);
-
     navigation.replace(
       data.rol === "maestro" ? "Maestro" : "Alumno"
     );
@@ -34,6 +38,10 @@ export function ContextoAuthProvider({ children }) {
   const registro = async (nombre, correo, password, rol) => {
     if (!nombre || !correo || !password || !rol) {
       throw new Error("Completa todos los campos");
+    }
+
+    if (!correoValido(correo)) {
+      throw new Error("Correo no válido (ej: usuario@email.com)");
     }
 
     const { data: existente } = await supabase
@@ -58,6 +66,8 @@ export function ContextoAuthProvider({ children }) {
     if (error) {
       throw new Error("Error al registrar usuario");
     }
+
+    return true;
   };
 
   const cerrarSesion = () => {
