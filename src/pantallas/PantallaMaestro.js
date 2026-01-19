@@ -12,25 +12,32 @@ import { ContextoAuth } from "../contexto/ContextoAuth";
 import { ContextoTareas } from "../contexto/ContextoTareas";
 
 export default function PantallaMaestro({ navigation }) {
-  const { usuario, cerrarSesion } = useContext(ContextoAuth);
+  const { cerrarSesion } = useContext(ContextoAuth);
   const { tareas, agregarTarea, eliminarTarea } =
     useContext(ContextoTareas);
 
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [fechaEntrega, setFechaEntrega] = useState("");
 
   const crearTarea = () => {
-    if (!titulo.trim() || !descripcion.trim()) {
+    if (!titulo.trim() || !descripcion.trim() || !fechaEntrega) {
       Alert.alert(
         "Error",
-        "El título y la descripción son obligatorios"
+        "Todos los campos son obligatorios"
       );
       return;
     }
 
-    agregarTarea(titulo.trim(), descripcion.trim());
+    agregarTarea(
+      titulo.trim(),
+      descripcion.trim(),
+      fechaEntrega
+    );
+
     setTitulo("");
     setDescripcion("");
+    setFechaEntrega("");
   };
 
   const handleCerrarSesion = () => {
@@ -58,6 +65,13 @@ export default function PantallaMaestro({ navigation }) {
         onChangeText={setDescripcion}
       />
 
+      <TextInput
+        placeholder="Fecha de entrega (YYYY-MM-DD)"
+        style={estilos.input}
+        value={fechaEntrega}
+        onChangeText={setFechaEntrega}
+      />
+
       <Button title="Agregar tarea" onPress={crearTarea} />
 
       <Text style={estilos.subtitulo}>Tareas creadas</Text>
@@ -67,8 +81,16 @@ export default function PantallaMaestro({ navigation }) {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={estilos.tarea}>
-            <Text style={estilos.tituloTarea}>{item.titulo}</Text>
+            <Text style={estilos.tituloTarea}>
+              {item.titulo}
+            </Text>
+
             <Text>{item.descripcion}</Text>
+
+            <Text style={estilos.fecha}>
+              📅 Entrega:{" "}
+              {new Date(item.fecha_entrega).toLocaleDateString()}
+            </Text>
 
             <View style={estilos.botonEliminar}>
               <Button
@@ -83,7 +105,8 @@ export default function PantallaMaestro({ navigation }) {
                       {
                         text: "Eliminar",
                         style: "destructive",
-                        onPress: () => eliminarTarea(item.id),
+                        onPress: () =>
+                          eliminarTarea(item.id),
                       },
                     ]
                   )
@@ -139,6 +162,10 @@ const estilos = StyleSheet.create({
   },
   tituloTarea: {
     fontWeight: "bold",
+  },
+  fecha: {
+    marginTop: 5,
+    fontStyle: "italic",
   },
   botonEliminar: {
     marginTop: 5,

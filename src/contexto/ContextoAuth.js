@@ -6,9 +6,6 @@ export const ContextoAuth = createContext();
 export function ContextoAuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
 
-  // ======================
-  // INICIAR SESIÓN
-  // ======================
   const iniciarSesion = async (correo, password, navigation) => {
     if (!correo || !password) {
       alert("Completa todos los campos");
@@ -20,7 +17,7 @@ export function ContextoAuthProvider({ children }) {
       .select("*")
       .eq("correo", correo.trim())
       .eq("password", password.trim())
-      .maybeSingle(); // 👈 IMPORTANTE
+      .maybeSingle();
 
     if (error || !data) {
       alert("Correo o contraseña incorrectos");
@@ -34,15 +31,11 @@ export function ContextoAuthProvider({ children }) {
     );
   };
 
-  // ======================
-  // REGISTRO
-  // ======================
   const registro = async (nombre, correo, password, rol) => {
     if (!nombre || !correo || !password || !rol) {
       throw new Error("Completa todos los campos");
     }
 
-    // 🔎 Verificar si el correo ya existe
     const { data: existente } = await supabase
       .from("usuario")
       .select("id")
@@ -53,7 +46,6 @@ export function ContextoAuthProvider({ children }) {
       throw new Error("Ese correo ya está registrado");
     }
 
-    // 📝 Registrar usuario
     const { error } = await supabase.from("usuario").insert([
       {
         nombre: nombre.trim(),
@@ -68,9 +60,6 @@ export function ContextoAuthProvider({ children }) {
     }
   };
 
-  // ======================
-  // CERRAR SESIÓN
-  // ======================
   const cerrarSesion = () => {
     setUsuario(null);
   };

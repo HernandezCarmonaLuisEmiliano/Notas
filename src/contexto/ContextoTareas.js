@@ -9,45 +9,49 @@ export function ContextoTareasProvider({ children }) {
   const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(false);
 
-  // ======================
-  // CARGAR TAREAS AL LOGIN
-  // ======================
   useEffect(() => {
     if (usuario?.id) {
+      limpiarTareasVencidas();
       obtenerTareas();
     } else {
       setTareas([]);
     }
   }, [usuario]);
 
-  // ======================
-  // OBTENER TAREAS
-  // ======================
+  const limpiarTareasVencidas = async () => {
+    const ahora = new Date().toISOString();
+
+    await supabase
+      .from("tareas")
+      .delete()
+      .lt("fecha_entrega", ahora);
+  };
+
   const obtenerTareas = async () => {
     setCargando(true);
 
-    const { data, error } = await supabase
-      .from("tareas")
-      .select("*")
-      .eq("usuario_id", usuario.id)
-      .order("created_at", { ascending: false });
+    let query = supabase.from("tareas").select("*");
+
+    if (usuario.rol === "maestro") {
+      query = query.eq("usuario_id", usuario.id);
+    }
+
+    const { data, error } = await query.order("fecha_entrega", {
+      ascending: true,
+    });
 
     setCargando(false);
 
     if (error) {
-      console.error("❌ Error al cargar tareas:", error);
       alert("Error al cargar tareas");
       return;
     }
 
-    setTareas(data || []);
+    setTareas(data);
   };
 
-  // ======================
-  // AGREGAR TAREA
-  // ======================
-  const agregarTarea = async (titulo, descripcion) => {
-    if (!titulo || !descripcion) {
+  const agregarTarea = async (titulo, descripcion, fechaEntrega) => {
+    if (!titulo || !descripcion || !fechaEntrega) {
       alert("Completa todos los campos");
       return;
     }
@@ -56,22 +60,35 @@ export function ContextoTareasProvider({ children }) {
       {
         titulo: titulo.trim(),
         descripcion: descripcion.trim(),
+        fecha_entrega: fechaEntrega,
         usuario_id: usuario.id,
+        entregada: false,
       },
     ]);
 
     if (error) {
-      console.error("❌ Error al guardar tarea:", error);
+      console.error("Error al guardar tarea:", error);
       alert("Error al guardar tarea");
       return;
     }
 
-    obtenerTareas(); // 🔄 refrescar lista
+    obtenerTareas();
   };
 
-  // ======================
-  // ELIMINAR TAREA
-  // ======================
+  const entregarTarea = async (id) => {
+    const { error } = await supabase
+      .from("tareas")
+      .update({ entregada: true })
+      .eq("id", id);
+
+    if (error) {
+      alert("Error al entregar tarea");
+      return;
+    }
+
+    obtenerTareas();
+  };
+
   const eliminarTarea = async (id) => {
     const { error } = await supabase
       .from("tareas")
@@ -79,7 +96,6 @@ export function ContextoTareasProvider({ children }) {
       .eq("id", id);
 
     if (error) {
-      console.error("❌ Error al eliminar tarea:", error);
       alert("Error al eliminar tarea");
       return;
     }
@@ -94,6 +110,7 @@ export function ContextoTareasProvider({ children }) {
         cargarTareas: obtenerTareas,
         agregarTarea,
         eliminarTarea,
+        entregarTarea,
         cargando,
       }}
     >
