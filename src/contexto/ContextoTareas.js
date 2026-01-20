@@ -11,20 +11,24 @@ export function ContextoTareasProvider({ children }) {
 
   useEffect(() => {
     if (usuario?.id) {
-      limpiarTareasVencidas();
+      if (usuario.rol === "maestro") {
+        limpiarTareasVencidas();
+      }
       obtenerTareas();
     } else {
       setTareas([]);
     }
   }, [usuario]);
 
+  // 🔹 BORRA SOLO TAREAS VENCIDAS NO ENTREGADAS
   const limpiarTareasVencidas = async () => {
     const ahora = new Date().toISOString();
 
     await supabase
       .from("tareas")
       .delete()
-      .lt("fecha_entrega", ahora);
+      .lt("fecha_entrega", ahora)
+      .eq("entregada", false);
   };
 
   const obtenerTareas = async () => {
@@ -34,6 +38,10 @@ export function ContextoTareasProvider({ children }) {
 
     if (usuario.rol === "maestro") {
       query = query.eq("usuario_id", usuario.id);
+    }
+
+    if (usuario.rol === "alumno") {
+      query = query.eq("grupo_id", usuario.grupo_id);
     }
 
     const { data, error } = await query.order("fecha_entrega", {
@@ -50,18 +58,22 @@ export function ContextoTareasProvider({ children }) {
     setTareas(data);
   };
 
+  // 🔹 CONVIERTE FECHA A FORMATO ISO
   const agregarTarea = async (titulo, descripcion, fechaEntrega) => {
     if (!titulo || !descripcion || !fechaEntrega) {
       alert("Completa todos los campos");
       return;
     }
 
+    const fechaISO = new Date(fechaEntrega).toISOString();
+
     const { error } = await supabase.from("tareas").insert([
       {
         titulo: titulo.trim(),
         descripcion: descripcion.trim(),
-        fecha_entrega: fechaEntrega,
+        fecha_entrega: fechaISO,
         usuario_id: usuario.id,
+        grupo_id: usuario.grupo_id,
         entregada: false,
       },
     ]);

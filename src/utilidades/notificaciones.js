@@ -1,8 +1,5 @@
 import * as Notifications from "expo-notifications";
 
-// ======================
-// PROGRAMAR NOTIFICACIÓN
-// ======================
 export async function programarNotificacion(
   titulo,
   cuerpo,
@@ -10,23 +7,20 @@ export async function programarNotificacion(
 ) {
   let trigger = null;
 
-  // 🔁 Diario (cada 24 horas)
   if (frecuencia === "Diario") {
     trigger = {
-      seconds: 86400, // 24 horas
+      seconds: 86400,
       repeats: true,
     };
   }
 
-  // 🔁 Semanal (cada 7 días)
   if (frecuencia === "Semanal") {
     trigger = {
-      seconds: 604800, // 7 días
+      seconds: 604800,
       repeats: true,
     };
   }
 
-  // 🚫 Nunca
   if (!trigger) {
     return null;
   }
@@ -42,18 +36,12 @@ export async function programarNotificacion(
   return id;
 }
 
-// ======================
-// CANCELAR NOTIFICACIÓN
-// ======================
 export async function cancelarNotificacion(id) {
   if (!id) return;
 
   await Notifications.cancelScheduledNotificationAsync(id);
 }
 
-// ======================
-// CANCELAR TODAS (extra útil)
-// ======================
 export async function cancelarTodasLasNotificaciones() {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }

@@ -30,18 +30,23 @@ export function ContextoAuthProvider({ children }) {
     }
 
     setUsuario(data);
+
     navigation.replace(
       data.rol === "maestro" ? "Maestro" : "Alumno"
     );
   };
 
-  const registro = async (nombre, correo, password, rol) => {
+  const registro = async (nombre, correo, password, rol, grupoId) => {
     if (!nombre || !correo || !password || !rol) {
       throw new Error("Completa todos los campos");
     }
 
     if (!correoValido(correo)) {
-      throw new Error("Correo no válido (ej: usuario@email.com)");
+      throw new Error("Correo inválido");
+    }
+
+    if (rol === "alumno" && !grupoId) {
+      throw new Error("Selecciona un grupo");
     }
 
     const { data: existente } = await supabase
@@ -60,14 +65,13 @@ export function ContextoAuthProvider({ children }) {
         correo: correo.trim(),
         password: password.trim(),
         rol,
+        grupo_id: rol === "alumno" ? grupoId : null,
       },
     ]);
 
     if (error) {
       throw new Error("Error al registrar usuario");
     }
-
-    return true;
   };
 
   const cerrarSesion = () => {
