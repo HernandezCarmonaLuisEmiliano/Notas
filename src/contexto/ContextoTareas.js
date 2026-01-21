@@ -24,7 +24,7 @@ export function ContextoTareasProvider({ children }) {
       const { data, error } = await supabase
         .from("tareas")
         .select("*")
-        .eq("registro_id", usuario.id)
+        .eq("grupo_id", usuario.id)
         .order("fecha_entrega", { ascending: true });
 
       setCargando(false);
@@ -85,15 +85,16 @@ export function ContextoTareasProvider({ children }) {
     const fechaISO = new Date(fechaEntrega).toISOString();
 
     const { data: tarea, error } = await supabase
-      .from("tareas")
-      .insert([
-        {
-          titulo: titulo.trim(),
-          descripcion: descripcion.trim(),
-          fecha_entrega: fechaISO,
-          registro_id: usuario.id,
-        },
-      ])
+  .from("tareas")
+  .insert([
+    {
+      titulo: titulo.trim(),
+      descripcion: descripcion.trim(),
+      fecha_entrega: fechaISO,
+      grupos_id: gruposIds[0],
+      grupo_id: usuario.id,
+    },
+  ])
       .select()
       .single();
 
