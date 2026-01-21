@@ -17,11 +17,9 @@ export function ContextoTareasProvider({ children }) {
     }
   }, [usuario]);
 
-  /* ================= OBTENER TAREAS ================= */
   const obtenerTareas = async () => {
     setCargando(true);
 
-    /* ---------- PROFESOR ---------- */
     if (usuario.rol === "profesor") {
       const { data, error } = await supabase
         .from("tareas")
@@ -38,21 +36,24 @@ export function ContextoTareasProvider({ children }) {
       }
 
       setTareas(data || []);
+      return;
     }
 
-    /* ---------- ALUMNO ---------- */
     if (usuario.rol === "alumno") {
       const { data, error } = await supabase
-        .from("tareas")
+        .from("tareas_grupos")
         .select(`
-          id,
-          titulo,
-          descripcion,
-          fecha_entrega,
-          entregas (
-            id
+          tareas (
+            id,
+            titulo,
+            descripcion,
+            fecha_entrega,
+            entregas (
+              alumno_id
+            )
           )
-        `);
+        `)
+        .eq("grupo_id", usuario.grupo_id);
 
       setCargando(false);
 
@@ -62,43 +63,64 @@ export function ContextoTareasProvider({ children }) {
         return;
       }
 
-      // Solo tareas NO entregadas
-      const pendientes = data.filter(
-        (tarea) => tarea.entregas.length === 0
-      );
+      const pendientes = data
+        .map((row) => row.tareas)
+        .filter(
+          (tarea) =>
+            !tarea.entregas.some(
+              (entrega) => entrega.alumno_id === usuario.id
+            )
+        );
 
       setTareas(pendientes);
     }
   };
 
-  /* ================= CREAR TAREA (PROFESOR) ================= */
-  const agregarTarea = async (titulo, descripcion, fechaEntrega) => {
-    if (!titulo || !descripcion || !fechaEntrega) {
-      alert("Completa todos los campos");
+  const agregarTarea = async (titulo, descripcion, fechaEntrega, gruposIds) => {
+    if (!titulo || !descripcion || !fechaEntrega || !gruposIds?.length) {
+      alert("Completa todos los campos y selecciona al menos un grupo");
       return;
     }
 
     const fechaISO = new Date(fechaEntrega).toISOString();
 
-    const { error } = await supabase.from("tareas").insert([
-      {
-        titulo: titulo.trim(),
-        descripcion: descripcion.trim(),
-        fecha_entrega: fechaISO,
-        registro_id: usuario.id, // ✅ CORRECTO
-      },
-    ]);
+    const { data: tarea, error } = await supabase
+      .from("tareas")
+      .insert([
+        {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim(),
+          fecha_entrega: fechaISO,
+          registro_id: usuario.id,
+        },
+      ])
+      .select()
+      .single();
 
-    if (error) {
+    if (error || !tarea) {
       console.error(error);
-      alert("Error al crear tarea");
+      alert("Error al crear la tarea");
+      return;
+    }
+
+    const relaciones = gruposIds.map((grupoId) => ({
+      tarea_id: tarea.id,
+      grupo_id: grupoId,
+    }));
+
+    const { error: relError } = await supabase
+      .from("tareas_grupos")
+      .insert(relaciones);
+
+    if (relError) {
+      console.error(relError);
+      alert("Error al asignar grupos a la tarea");
       return;
     }
 
     obtenerTareas();
   };
 
-  /* ================= ENTREGAR TAREA (ALUMNO) ================= */
   const entregarTarea = async (tareaId) => {
     const { error } = await supabase.from("entregas").insert([
       {
@@ -108,6 +130,7 @@ export function ContextoTareasProvider({ children }) {
     ]);
 
     if (error) {
+      console.error(error);
       alert("La tarea ya fue entregada o ocurrió un error");
       return;
     }
@@ -115,9 +138,18 @@ export function ContextoTareasProvider({ children }) {
     obtenerTareas();
   };
 
-  /* ================= ELIMINAR TAREA ================= */
   const eliminarTarea = async (id) => {
-    await supabase.from("tareas").delete().eq("id", id);
+    const { error } = await supabase
+      .from("tareas")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      alert("Error al eliminar tarea");
+      return;
+    }
+
     obtenerTareas();
   };
 
