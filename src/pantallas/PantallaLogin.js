@@ -1,7 +1,10 @@
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
 import { useNavigation } from "@react-navigation/native";
+
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 export default function PantallaLogin() {
   const { iniciarSesion } = useContext(ContextoAuth);
@@ -9,9 +12,26 @@ export default function PantallaLogin() {
 
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
+  const [expoToken, setExpoToken] = useState(null);
+
+  useEffect(() => {
+    async function obtenerToken() {
+      try {
+        const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+        if (!projectId) return;
+
+        const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        setExpoToken(token);
+        console.log("Token capturado en Login:", token);
+      } catch (error) {
+        console.log("No se pudo obtener el token en esta sesión:", error);
+      }
+    }
+    obtenerToken();
+  }, []);
 
   const handleLogin = () => {
-    iniciarSesion(correo, password, navigation);
+    iniciarSesion(correo, password, navigation, expoToken);
   };
 
   return (

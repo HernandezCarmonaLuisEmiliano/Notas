@@ -24,6 +24,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9a2dbb77-15bc-4078-a48a-b2d80027be9f"
+      }
+    },
+    "owner": "luisemiliano"
   }
 }
