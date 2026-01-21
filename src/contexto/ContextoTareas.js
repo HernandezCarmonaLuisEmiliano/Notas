@@ -11,46 +11,35 @@ export function ContextoTareasProvider({ children }) {
 
   useEffect(() => {
     if (usuario?.id) {
-      if (usuario.rol === "maestro") {
-        limpiarTareasVencidas();
-      }
       obtenerTareas();
     } else {
       setTareas([]);
     }
   }, [usuario]);
 
-  const limpiarTareasVencidas = async () => {
-    const ahora = new Date().toISOString();
-
-    await supabase
-      .from("tareas")
-      .delete()
-      .lt("fecha_entrega", ahora)
-      .eq("entregada", false)
-      .eq("usuario_id", usuario.id);
-  };
-
   const obtenerTareas = async () => {
     setCargando(true);
 
+    // 👨‍🏫 MAESTRO
     if (usuario.rol === "maestro") {
       const { data, error } = await supabase
         .from("tareas")
         .select("*")
-        .eq("usuario_id", usuario.id)
+        .eq("registro_id", usuario.id)
         .order("fecha_entrega", { ascending: true });
 
       setCargando(false);
 
       if (error) {
+        console.error(error);
         alert("Error al cargar tareas");
         return;
       }
 
-      setTareas(data);
+      setTareas(data || []);
     }
 
+    // 👨‍🎓 ALUMNO
     if (usuario.rol === "alumno") {
       const { data, error } = await supabase
         .from("tareas_grupos")
@@ -59,8 +48,7 @@ export function ContextoTareasProvider({ children }) {
             id,
             titulo,
             descripcion,
-            fecha_entrega,
-            entregada
+            fecha_entrega
           )
         `)
         .eq("grupo_id", usuario.grupo_id);
@@ -68,6 +56,7 @@ export function ContextoTareasProvider({ children }) {
       setCargando(false);
 
       if (error) {
+        console.error(error);
         alert("Error al cargar tareas");
         return;
       }
@@ -91,14 +80,14 @@ export function ContextoTareasProvider({ children }) {
           titulo: titulo.trim(),
           descripcion: descripcion.trim(),
           fecha_entrega: fechaISO,
-          usuario_id: usuario.id,
-          entregada: false,
+          registro_id: usuario.id, // 👈 CLAVE CORRECTA
         },
       ])
       .select()
       .single();
 
     if (error) {
+      console.error(error);
       alert("Error al crear tarea");
       return;
     }
@@ -113,21 +102,8 @@ export function ContextoTareasProvider({ children }) {
       .insert(relaciones);
 
     if (errorRel) {
+      console.error(errorRel);
       alert("Error al asignar grupos");
-      return;
-    }
-
-    obtenerTareas();
-  };
-
-  const entregarTarea = async (id) => {
-    const { error } = await supabase
-      .from("tareas")
-      .update({ entregada: true })
-      .eq("id", id);
-
-    if (error) {
-      alert("Error al entregar tarea");
       return;
     }
 
@@ -141,6 +117,7 @@ export function ContextoTareasProvider({ children }) {
       .eq("id", id);
 
     if (error) {
+      console.error(error);
       alert("Error al eliminar tarea");
       return;
     }
@@ -155,7 +132,6 @@ export function ContextoTareasProvider({ children }) {
         cargarTareas: obtenerTareas,
         agregarTarea,
         eliminarTarea,
-        entregarTarea,
         cargando,
       }}
     >

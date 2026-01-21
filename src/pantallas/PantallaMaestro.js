@@ -27,16 +27,17 @@ export default function PantallaMaestro({ navigation }) {
   const [gruposSeleccionados, setGruposSeleccionados] = useState([]);
 
   useEffect(() => {
-    const cargarGrupos = async () => {
-      const { data, error } = await supabase
-        .from("grupos")
-        .select("id, nombre");
+  const cargarGrupos = async () => {
+    const { data } = await supabase
+      .from("grupos")
+      .select("id_grupo, nombre");
 
-      if (!error) setGrupos(data || []);
-    };
+    setGrupos(data || []);
+  };
 
-    cargarGrupos();
-  }, []);
+  cargarGrupos();
+}, []);
+
 
   const toggleGrupo = (grupoId) => {
     setGruposSeleccionados((prev) =>
@@ -111,18 +112,19 @@ export default function PantallaMaestro({ navigation }) {
       <Text style={estilos.subtitulo}>Asignar a grupos</Text>
 
       {grupos.map((grupo) => (
-        <TouchableOpacity
-          key={grupo.id}
-          style={[
-            estilos.grupo,
-            gruposSeleccionados.includes(grupo.id) &&
-              estilos.grupoSeleccionado,
-          ]}
-          onPress={() => toggleGrupo(grupo.id)}
-        >
-          <Text>{grupo.nombre}</Text>
-        </TouchableOpacity>
-      ))}
+  <TouchableOpacity
+    key={grupo.id_grupo}
+    style={[
+      estilos.grupo,
+      gruposSeleccionados.includes(grupo.id_grupo) &&
+        estilos.grupoSeleccionado,
+    ]}
+    onPress={() => toggleGrupo(grupo.id_grupo)}
+  >
+    <Text>{grupo.nombre}</Text>
+  </TouchableOpacity>
+))}
+
 
       <Button title="Agregar tarea" onPress={crearTarea} />
 
@@ -130,7 +132,7 @@ export default function PantallaMaestro({ navigation }) {
 
       <FlatList
         data={tareas}
-        scrollEnabled={false} // 👈 IMPORTANTE
+        scrollEnabled={false}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={estilos.tarea}>

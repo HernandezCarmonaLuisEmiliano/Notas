@@ -34,6 +34,7 @@ export default function App() {
             <Stack.Screen name="Registro" component={PantallaRegistro} />
             <Stack.Screen name="Alumno" component={PantallaAlumno} />
             <Stack.Screen name="Maestro" component={PantallaMaestro} />
+
           </Stack.Navigator>
         </NavigationContainer>
       </ContextoTareasProvider>

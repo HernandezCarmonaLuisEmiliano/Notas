@@ -7,47 +7,77 @@ export const ContextoAuth = createContext();
 export function ContextoAuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
 
-  const correoValido = (correo) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(correo);
-  };
-
   const iniciarSesion = async (correo, password, navigation) => {
-    if (!correo || !password) {
-      Alert.alert("Error", "Completa todos los campos");
-      return;
+    try {
+      if (!correo || !password) {
+        Alert.alert("Error", "Completa todos los campos");
+        return;
+      }
+
+      //correo
+      const { data: correoData, error: correoError } = await supabase
+        .from("correo")
+        .select("id")
+        .eq("email", correo.trim())
+        .single();
+
+      if (correoError || !correoData) {
+        Alert.alert("Error", "Correo o contraseña incorrectos");
+        return;
+      }
+
+      //registro
+      const { data: registroData, error: registroError } = await supabase
+        .from("registro")
+        .select("*")
+        .eq("correo_id", correoData.id)
+        .single();
+
+      if (registroError || !registroData) {
+        Alert.alert("Error", "Correo o contraseña incorrectos");
+        return;
+      }
+
+      //contraseña
+      const { data: passData, error: passError } = await supabase
+        .from("contrasena")
+        .select("contrasena")
+        .eq("id", registroData.contrasena_id)
+        .single();
+
+      if (passError || passData.contrasena !== password.trim()) {
+        Alert.alert("Error", "Correo o contraseña incorrectos");
+        return;
+      }
+
+      const usuarioNormalizado = {
+        id: registroData.nombre_id, //PK
+        rol: registroData.rol,
+        grupo_id: registroData.grupo_id,
+        nombre: registroData.nombre_completo,
+      };
+
+      setUsuario(usuarioNormalizado);
+
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: usuarioNormalizado.rol === "profesor" ? "Maestro" : "Alumno",
+          },
+        ],
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Error al iniciar sesión");
     }
-
-    const { data, error } = await supabase
-      .from("registro")
-      .select(`
-        *,
-        correo:coreo_id!inner(email),
-        contrasena:contrasena_id!inner(contrasena) 
-      `)
-      .eq("correo.email", correo.trim())
-      .eq("contrasena.contrasena", password.trim())
-      .maybeSingle();
-
-    if (error || !data) {
-      Alert.alert("Error", "Correo o contraseña incorrectos");
-      return;
-    }
-
-    setUsuario(data);
-    navigation.replace(data.rol === "maestro" ? "PantallaMaestro" : "PantallaAlumno");
   };
 
   const registro = async (nombre, correo, password, rol, grupoId) => {
-    if (!nombre?.trim() || !correo?.trim() || !password?.trim() || !rol) {
-      throw new Error("Completa todos los campos obligatorios");
-    }
-
-    // NORMALIZACIÓN: Forzamos minúsculas para evitar el error 'registro_rol_check'
-    const rolLimpio = rol.trim().toLowerCase();
-
     try {
-      // PASO 1: Obtener o crear ID de correo
+      const rolLimpio = rol.trim().toLowerCase();
+
+      // correo
       let idCorreo;
       const { data: existeCorreo } = await supabase
         .from("correo")
@@ -58,52 +88,47 @@ export function ContextoAuthProvider({ children }) {
       if (existeCorreo) {
         idCorreo = existeCorreo.id;
       } else {
-        const { data: nCor, error: eCor } = await supabase
+        const { data } = await supabase
           .from("correo")
           .insert([{ email: correo.trim() }])
           .select("id")
           .single();
-        if (eCor) throw new Error("Error al guardar correo");
-        idCorreo = nCor.id;
+        idCorreo = data.id;
       }
 
-      // PASO 2: Insertar contraseña y obtener ID
-      const { data: dataPass, error: errorPass } = await supabase
-        .from("contrasena") 
-        .insert([{ contrasena: password.trim() }]) 
+      // contraseña
+      const { data: passData } = await supabase
+        .from("contrasena")
+        .insert([{ contrasena: password.trim() }])
         .select("id")
         .single();
 
-      if (errorPass) throw new Error("Error al guardar contraseña");
-      const idPass = dataPass.id;
-
-      // PASO 3: Insertar en la tabla 'registro'
-      const { error: errorReg } = await supabase.from("registro").insert([
+      // registro
+      const { error } = await supabase.from("registro").insert([
         {
           nombre_completo: nombre.trim(),
-          correo_id: idCorreo, // Revisa si en tu DB es 'coreo_id' o 'correo_id'
-          contrasena_id: idPass,
-          rol: rolLimpio, // Enviamos 'maestro' o 'alumno' en minúsculas
-          grupo_id: grupoId || null,
+          correo_id: idCorreo,
+          contrasena_id: passData.id,
+          rol: rolLimpio,
+          grupo_id: rolLimpio === "alumno" ? grupoId : null,
         },
       ]);
 
-      if (errorReg) {
-        console.error("Error DB Registro:", errorReg);
-        throw new Error("Error en los datos: " + errorReg.message);
-      }
+      if (error) throw error;
 
-      Alert.alert("Éxito", "Usuario creado correctamente");
-    } catch (err) {
-      console.error(err);
-      throw err;
+      Alert.alert("Éxito", "Usuario registrado correctamente");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Error al registrar usuario");
     }
   };
 
   const cerrarSesion = () => setUsuario(null);
 
   return (
-    <ContextoAuth.Provider value={{ usuario, iniciarSesion, registro, cerrarSesion }}>
+    <ContextoAuth.Provider
+      value={{ usuario, iniciarSesion, registro, cerrarSesion }}
+    >
       {children}
     </ContextoAuth.Provider>
   );
