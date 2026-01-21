@@ -86,7 +86,7 @@ export default function PantallaRegistro({ navigation }) {
         <Button 
           title="Soy Profesor" 
           onPress={() => setRol("profesor")} 
-          color={rol === "profesor" ? "#2196F3" : "#ccc"}
+          color={rol === "profesor" ? "#2196F3" : "#da4141"}
         />
       </View>
 
