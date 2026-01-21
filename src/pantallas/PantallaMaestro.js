@@ -6,10 +6,13 @@ import {
   Button,
   FlatList,
   Alert,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { ContextoAuth } from "../contexto/ContextoAuth";
 import { ContextoTareas } from "../contexto/ContextoTareas";
+import { supabase } from "../supabase/supabase";
 
 export default function PantallaMaestro({ navigation }) {
   const { cerrarSesion } = useContext(ContextoAuth);
@@ -20,11 +23,39 @@ export default function PantallaMaestro({ navigation }) {
   const [descripcion, setDescripcion] = useState("");
   const [fechaEntrega, setFechaEntrega] = useState("");
 
+  const [grupos, setGrupos] = useState([]);
+  const [gruposSeleccionados, setGruposSeleccionados] = useState([]);
+
+  useEffect(() => {
+    const cargarGrupos = async () => {
+      const { data, error } = await supabase
+        .from("grupos")
+        .select("id, nombre");
+
+      if (!error) setGrupos(data || []);
+    };
+
+    cargarGrupos();
+  }, []);
+
+  const toggleGrupo = (grupoId) => {
+    setGruposSeleccionados((prev) =>
+      prev.includes(grupoId)
+        ? prev.filter((id) => id !== grupoId)
+        : [...prev, grupoId]
+    );
+  };
+
   const crearTarea = () => {
-    if (!titulo.trim() || !descripcion.trim() || !fechaEntrega) {
+    if (
+      !titulo.trim() ||
+      !descripcion.trim() ||
+      !fechaEntrega ||
+      gruposSeleccionados.length === 0
+    ) {
       Alert.alert(
         "Error",
-        "Todos los campos son obligatorios"
+        "Completa todos los campos y selecciona al menos un grupo"
       );
       return;
     }
@@ -32,12 +63,14 @@ export default function PantallaMaestro({ navigation }) {
     agregarTarea(
       titulo.trim(),
       descripcion.trim(),
-      fechaEntrega
+      fechaEntrega,
+      gruposSeleccionados
     );
 
     setTitulo("");
     setDescripcion("");
     setFechaEntrega("");
+    setGruposSeleccionados([]);
   };
 
   const handleCerrarSesion = () => {
@@ -46,7 +79,10 @@ export default function PantallaMaestro({ navigation }) {
   };
 
   return (
-    <View style={estilos.contenedor}>
+    <ScrollView
+      style={estilos.contenedor}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
       <Text style={estilos.titulo}>Panel del Maestro</Text>
 
       <Text style={estilos.subtitulo}>Crear nueva tarea</Text>
@@ -72,12 +108,29 @@ export default function PantallaMaestro({ navigation }) {
         onChangeText={setFechaEntrega}
       />
 
+      <Text style={estilos.subtitulo}>Asignar a grupos</Text>
+
+      {grupos.map((grupo) => (
+        <TouchableOpacity
+          key={grupo.id}
+          style={[
+            estilos.grupo,
+            gruposSeleccionados.includes(grupo.id) &&
+              estilos.grupoSeleccionado,
+          ]}
+          onPress={() => toggleGrupo(grupo.id)}
+        >
+          <Text>{grupo.nombre}</Text>
+        </TouchableOpacity>
+      ))}
+
       <Button title="Agregar tarea" onPress={crearTarea} />
 
       <Text style={estilos.subtitulo}>Tareas creadas</Text>
 
       <FlatList
         data={tareas}
+        scrollEnabled={false} // 👈 IMPORTANTE
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={estilos.tarea}>
@@ -88,31 +141,29 @@ export default function PantallaMaestro({ navigation }) {
             <Text>{item.descripcion}</Text>
 
             <Text style={estilos.fecha}>
-              📅 Entrega:{" "}
+              Entrega:{" "}
               {new Date(item.fecha_entrega).toLocaleDateString()}
             </Text>
 
-            <View style={estilos.botonEliminar}>
-              <Button
-                title="Eliminar"
-                color="red"
-                onPress={() =>
-                  Alert.alert(
-                    "Confirmar",
-                    "¿Deseas eliminar esta tarea?",
-                    [
-                      { text: "Cancelar", style: "cancel" },
-                      {
-                        text: "Eliminar",
-                        style: "destructive",
-                        onPress: () =>
-                          eliminarTarea(item.id),
-                      },
-                    ]
-                  )
-                }
-              />
-            </View>
+            <Button
+              title="Eliminar"
+              color="red"
+              onPress={() =>
+                Alert.alert(
+                  "Confirmar",
+                  "¿Deseas eliminar esta tarea?",
+                  [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                      text: "Eliminar",
+                      style: "destructive",
+                      onPress: () =>
+                        eliminarTarea(item.id),
+                    },
+                  ]
+                )
+              }
+            />
           </View>
         )}
         ListEmptyComponent={
@@ -127,7 +178,7 @@ export default function PantallaMaestro({ navigation }) {
           onPress={handleCerrarSesion}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -153,6 +204,16 @@ const estilos = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
+  grupo: {
+    borderWidth: 1,
+    borderColor: "#aaa",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+  },
+  grupoSeleccionado: {
+    backgroundColor: "#cce5ff",
+  },
   tarea: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -167,10 +228,7 @@ const estilos = StyleSheet.create({
     marginTop: 5,
     fontStyle: "italic",
   },
-  botonEliminar: {
-    marginTop: 5,
-  },
   cerrarSesion: {
-    marginTop: 15,
+    marginTop: 20,
   },
 });

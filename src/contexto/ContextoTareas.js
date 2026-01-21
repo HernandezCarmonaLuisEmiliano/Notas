@@ -20,7 +20,6 @@ export function ContextoTareasProvider({ children }) {
     }
   }, [usuario]);
 
-  // 🔹 BORRA SOLO TAREAS VENCIDAS NO ENTREGADAS
   const limpiarTareasVencidas = async () => {
     const ahora = new Date().toISOString();
 
@@ -28,59 +27,93 @@ export function ContextoTareasProvider({ children }) {
       .from("tareas")
       .delete()
       .lt("fecha_entrega", ahora)
-      .eq("entregada", false);
+      .eq("entregada", false)
+      .eq("usuario_id", usuario.id);
   };
 
   const obtenerTareas = async () => {
     setCargando(true);
 
-    let query = supabase.from("tareas").select("*");
-
     if (usuario.rol === "maestro") {
-      query = query.eq("usuario_id", usuario.id);
+      const { data, error } = await supabase
+        .from("tareas")
+        .select("*")
+        .eq("usuario_id", usuario.id)
+        .order("fecha_entrega", { ascending: true });
+
+      setCargando(false);
+
+      if (error) {
+        alert("Error al cargar tareas");
+        return;
+      }
+
+      setTareas(data);
     }
 
     if (usuario.rol === "alumno") {
-      query = query.eq("grupo_id", usuario.grupo_id);
+      const { data, error } = await supabase
+        .from("tareas_grupos")
+        .select(`
+          tareas (
+            id,
+            titulo,
+            descripcion,
+            fecha_entrega,
+            entregada
+          )
+        `)
+        .eq("grupo_id", usuario.grupo_id);
+
+      setCargando(false);
+
+      if (error) {
+        alert("Error al cargar tareas");
+        return;
+      }
+
+      setTareas(data.map((t) => t.tareas));
     }
-
-    const { data, error } = await query.order("fecha_entrega", {
-      ascending: true,
-    });
-
-    setCargando(false);
-
-    if (error) {
-      alert("Error al cargar tareas");
-      return;
-    }
-
-    setTareas(data);
   };
 
-  // 🔹 CONVIERTE FECHA A FORMATO ISO
-  const agregarTarea = async (titulo, descripcion, fechaEntrega) => {
-    if (!titulo || !descripcion || !fechaEntrega) {
-      alert("Completa todos los campos");
+  const agregarTarea = async (titulo, descripcion, fechaEntrega, gruposIds) => {
+    if (!titulo || !descripcion || !fechaEntrega || gruposIds.length === 0) {
+      alert("Completa todos los campos y selecciona al menos un grupo");
       return;
     }
 
     const fechaISO = new Date(fechaEntrega).toISOString();
 
-    const { error } = await supabase.from("tareas").insert([
-      {
-        titulo: titulo.trim(),
-        descripcion: descripcion.trim(),
-        fecha_entrega: fechaISO,
-        usuario_id: usuario.id,
-        grupo_id: usuario.grupo_id,
-        entregada: false,
-      },
-    ]);
+    const { data: tarea, error } = await supabase
+      .from("tareas")
+      .insert([
+        {
+          titulo: titulo.trim(),
+          descripcion: descripcion.trim(),
+          fecha_entrega: fechaISO,
+          usuario_id: usuario.id,
+          entregada: false,
+        },
+      ])
+      .select()
+      .single();
 
     if (error) {
-      console.error("Error al guardar tarea:", error);
-      alert("Error al guardar tarea");
+      alert("Error al crear tarea");
+      return;
+    }
+
+    const relaciones = gruposIds.map((grupoId) => ({
+      tarea_id: tarea.id,
+      grupo_id: grupoId,
+    }));
+
+    const { error: errorRel } = await supabase
+      .from("tareas_grupos")
+      .insert(relaciones);
+
+    if (errorRel) {
+      alert("Error al asignar grupos");
       return;
     }
 

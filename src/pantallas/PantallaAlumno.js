@@ -49,7 +49,7 @@ export default function PantallaAlumno({ navigation }) {
               <Text>{item.descripcion}</Text>
 
               <Text style={estilos.fecha}>
-                📅 Entrega:{" "}
+                Entrega:{" "}
                 {new Date(
                   item.fecha_entrega
                 ).toLocaleDateString()}
@@ -57,7 +57,7 @@ export default function PantallaAlumno({ navigation }) {
 
               {vencida ? (
                 <Text style={estilos.vencida}>
-                  ❌ Tarea vencida
+                   Tarea vencida
                 </Text>
               ) : (
                 <Button
