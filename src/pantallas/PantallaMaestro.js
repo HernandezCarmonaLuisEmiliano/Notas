@@ -175,10 +175,10 @@ export default function PantallaMaestro({ navigation }) {
 
       <View style={estilos.cerrarSesion}>
         <Button
-          title="Cerrar sesión"
-          color="#444"
-          onPress={handleCerrarSesion}
-        />
+        title="Cerrar sesión"
+        color="#444"
+        onPress={handleCerrarSesion}
+      />
       </View>
     </ScrollView>
   );
@@ -188,6 +188,11 @@ const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
     padding: 20,
+  },
+  cerrarSesion: {
+    marginTop: 40,
+    marginBottom: 60,
+    paddingHorizontal: 10,
   },
   titulo: {
     fontSize: 24,

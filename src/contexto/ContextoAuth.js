@@ -14,7 +14,6 @@ export function ContextoAuthProvider({ children }) {
         return;
       }
 
-      //correo
       const { data: correoData, error: correoError } = await supabase
         .from("correo")
         .select("id")
@@ -26,7 +25,6 @@ export function ContextoAuthProvider({ children }) {
         return;
       }
 
-      //registro
       const { data: registroData, error: registroError } = await supabase
         .from("registro")
         .select("*")
@@ -38,7 +36,6 @@ export function ContextoAuthProvider({ children }) {
         return;
       }
 
-      //contraseña
       const { data: passData, error: passError } = await supabase
         .from("contrasena")
         .select("contrasena")
@@ -51,7 +48,7 @@ export function ContextoAuthProvider({ children }) {
       }
 
       const usuarioNormalizado = {
-        id: registroData.nombre_id, //PK
+        id: registroData.nombre_id,
         rol: registroData.rol,
         grupo_id: registroData.grupo_id,
         nombre: registroData.nombre_completo,
@@ -77,7 +74,6 @@ export function ContextoAuthProvider({ children }) {
     try {
       const rolLimpio = rol.trim().toLowerCase();
 
-      // correo
       let idCorreo;
       const { data: existeCorreo } = await supabase
         .from("correo")
@@ -96,14 +92,12 @@ export function ContextoAuthProvider({ children }) {
         idCorreo = data.id;
       }
 
-      // contraseña
       const { data: passData } = await supabase
         .from("contrasena")
         .insert([{ contrasena: password.trim() }])
         .select("id")
         .single();
 
-      // registro
       const { error } = await supabase.from("registro").insert([
         {
           nombre_completo: nombre.trim(),
