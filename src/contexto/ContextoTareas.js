@@ -17,21 +17,22 @@ export function ContextoTareasProvider({ children }) {
     }
   }, [usuario]);
 
-  // 📥 OBTENER TAREAS
+  /* ================= OBTENER TAREAS ================= */
   const obtenerTareas = async () => {
     setCargando(true);
 
-    // 👨‍🏫 MAESTRO → ve solo sus tareas
+    /* ---------- PROFESOR ---------- */
     if (usuario.rol === "profesor") {
       const { data, error } = await supabase
         .from("tareas")
         .select("*")
-        .eq("usuario_id", usuario.id)
+        .eq("registro_id", usuario.id)
         .order("fecha_entrega", { ascending: true });
 
       setCargando(false);
 
       if (error) {
+        console.error(error);
         alert("Error al cargar tareas del profesor");
         return;
       }
@@ -39,20 +40,19 @@ export function ContextoTareasProvider({ children }) {
       setTareas(data || []);
     }
 
-    // 👨‍🎓 ALUMNO → tareas por grupo
+    /* ---------- ALUMNO ---------- */
     if (usuario.rol === "alumno") {
       const { data, error } = await supabase
-        .from("tareas_grupos")
+        .from("tareas")
         .select(`
-          tareas (
-            id,
-            titulo,
-            descripcion,
-            fecha_entrega,
-            entregada
+          id,
+          titulo,
+          descripcion,
+          fecha_entrega,
+          entregas (
+            id
           )
-        `)
-        .eq("grupo_id", usuario.grupo_id);
+        `);
 
       setCargando(false);
 
@@ -62,33 +62,32 @@ export function ContextoTareasProvider({ children }) {
         return;
       }
 
-      setTareas(data.map((row) => row.tareas));
+      // Solo tareas NO entregadas
+      const pendientes = data.filter(
+        (tarea) => tarea.entregas.length === 0
+      );
+
+      setTareas(pendientes);
     }
   };
 
-  // ➕ CREAR TAREA
-  const agregarTarea = async (titulo, descripcion, fechaEntrega, gruposIds) => {
-    if (!titulo || !descripcion || !fechaEntrega || gruposIds.length === 0) {
-      alert("Completa todos los campos y selecciona al menos un grupo");
+  /* ================= CREAR TAREA (PROFESOR) ================= */
+  const agregarTarea = async (titulo, descripcion, fechaEntrega) => {
+    if (!titulo || !descripcion || !fechaEntrega) {
+      alert("Completa todos los campos");
       return;
     }
 
     const fechaISO = new Date(fechaEntrega).toISOString();
 
-    // 1️⃣ Crear tarea
-    const { data: tarea, error } = await supabase
-      .from("tareas")
-      .insert([
-        {
-          titulo,
-          descripcion,
-          fecha_entrega: fechaISO,
-          usuario_id: usuario.id,
-          entregada: false,
-        },
-      ])
-      .select()
-      .single();
+    const { error } = await supabase.from("tareas").insert([
+      {
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        fecha_entrega: fechaISO,
+        registro_id: usuario.id, // ✅ CORRECTO
+      },
+    ]);
 
     if (error) {
       console.error(error);
@@ -96,25 +95,27 @@ export function ContextoTareasProvider({ children }) {
       return;
     }
 
-    // 2️⃣ Relacionar con grupos
-    const relaciones = gruposIds.map((grupoId) => ({
-      tarea_id: tarea.id,
-      grupo_id: grupoId,
-    }));
+    obtenerTareas();
+  };
 
-    const { error: relError } = await supabase
-      .from("tareas_grupos")
-      .insert(relaciones);
+  /* ================= ENTREGAR TAREA (ALUMNO) ================= */
+  const entregarTarea = async (tareaId) => {
+    const { error } = await supabase.from("entregas").insert([
+      {
+        tarea_id: tareaId,
+        alumno_id: usuario.id,
+      },
+    ]);
 
-    if (relError) {
-      console.error(relError);
-      alert("Error al asignar grupos");
+    if (error) {
+      alert("La tarea ya fue entregada o ocurrió un error");
       return;
     }
 
     obtenerTareas();
   };
 
+  /* ================= ELIMINAR TAREA ================= */
   const eliminarTarea = async (id) => {
     await supabase.from("tareas").delete().eq("id", id);
     obtenerTareas();
@@ -126,6 +127,7 @@ export function ContextoTareasProvider({ children }) {
         tareas,
         agregarTarea,
         eliminarTarea,
+        entregarTarea,
         cargando,
       }}
     >
