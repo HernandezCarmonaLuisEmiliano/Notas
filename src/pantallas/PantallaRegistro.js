@@ -12,39 +12,41 @@ export default function PantallaRegistro({ navigation }) {
   const [password, setPassword] = useState("");
   const [rol, setRol] = useState("alumno");
   const [grupos, setGrupos] = useState([]);
-  const [grupoId, setGrupoId] = useState(null);
+  const [grupoId, setGrupoId] = useState("");
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
     const cargarGrupos = async () => {
       const { data, error } = await supabase
         .from("grupos")
-        .select("id, nombre");
+        .select("id_grupo, nombre");
       if (!error) setGrupos(data);
     };
     cargarGrupos();
   }, []);
 
   const handleRegistro = async () => {
-    // Validación local rápida
-    if (!nombre || !correo || !password) {
-      Alert.alert("Error", "Por favor llena todos los campos");
-      return;
-    }
+  if (!nombre || !correo || !password) {
+    Alert.alert("Error", "Por favor llena todos los campos");
+    return;
+  }
 
-    setCargando(true);
-    try {
-      // El rol se envía tal cual, el ContextoAuth se encargará de normalizarlo
-      await registro(nombre, correo, password, rol, grupoId);
-      // Nota: El alert de éxito ya lo pusimos en el Contexto, 
-      // pero si quieres uno aquí, es mejor usar Alert.alert
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert("Error de Registro", error.message);
-    } finally {
-      setCargando(false);
-    }
-  };
+  if (rol === "alumno" && !grupoId) {
+    Alert.alert("Error", "Selecciona un grupo");
+    return;
+  }
+
+  setCargando(true);
+  try {
+    await registro(nombre, correo, password, rol, grupoId);
+    navigation.goBack();
+  } catch (error) {
+    Alert.alert("Error de Registro", error.message);
+  } finally {
+    setCargando(false);
+  }
+};
+
 
   return (
     <View style={estilos.contenedor}>
@@ -93,13 +95,17 @@ export default function PantallaRegistro({ navigation }) {
           <Text style={{ marginLeft: 10, marginTop: 5 }}>Selecciona tu Grupo:</Text>
           <Picker
             selectedValue={grupoId}
-            onValueChange={(value) => setGrupoId(value)}
+            onValueChange={(value) => setGrupoId(Number(value))}
           >
-            <Picker.Item label="Toca para elegir..." value={null} />
+            <Picker.Item label="Toca para elegir..." value="" />
             {grupos.map((grupo) => (
-              <Picker.Item key={grupo.id} label={grupo.nombre} value={grupo.id} />
+              <Picker.Item
+                key={grupo.id_grupo}
+                label={grupo.nombre}
+                value={grupo.id_grupo}
+              />
             ))}
-          </Picker>
+        </Picker>
         </View>
       )}
 

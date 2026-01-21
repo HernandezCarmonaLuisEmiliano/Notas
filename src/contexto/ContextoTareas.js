@@ -17,29 +17,29 @@ export function ContextoTareasProvider({ children }) {
     }
   }, [usuario]);
 
+  // 📥 OBTENER TAREAS
   const obtenerTareas = async () => {
     setCargando(true);
 
-    // 👨‍🏫 MAESTRO
-    if (usuario.rol === "maestro") {
+    // 👨‍🏫 MAESTRO → ve solo sus tareas
+    if (usuario.rol === "profesor") {
       const { data, error } = await supabase
         .from("tareas")
         .select("*")
-        .eq("registro_id", usuario.id)
+        .eq("usuario_id", usuario.id)
         .order("fecha_entrega", { ascending: true });
 
       setCargando(false);
 
       if (error) {
-        console.error(error);
-        alert("Error al cargar tareas");
+        alert("Error al cargar tareas del profesor");
         return;
       }
 
       setTareas(data || []);
     }
 
-    // 👨‍🎓 ALUMNO
+    // 👨‍🎓 ALUMNO → tareas por grupo
     if (usuario.rol === "alumno") {
       const { data, error } = await supabase
         .from("tareas_grupos")
@@ -48,7 +48,8 @@ export function ContextoTareasProvider({ children }) {
             id,
             titulo,
             descripcion,
-            fecha_entrega
+            fecha_entrega,
+            entregada
           )
         `)
         .eq("grupo_id", usuario.grupo_id);
@@ -57,14 +58,15 @@ export function ContextoTareasProvider({ children }) {
 
       if (error) {
         console.error(error);
-        alert("Error al cargar tareas");
+        alert("Error al cargar tareas del alumno");
         return;
       }
 
-      setTareas(data.map((t) => t.tareas));
+      setTareas(data.map((row) => row.tareas));
     }
   };
 
+  // ➕ CREAR TAREA
   const agregarTarea = async (titulo, descripcion, fechaEntrega, gruposIds) => {
     if (!titulo || !descripcion || !fechaEntrega || gruposIds.length === 0) {
       alert("Completa todos los campos y selecciona al menos un grupo");
@@ -73,14 +75,16 @@ export function ContextoTareasProvider({ children }) {
 
     const fechaISO = new Date(fechaEntrega).toISOString();
 
+    // 1️⃣ Crear tarea
     const { data: tarea, error } = await supabase
       .from("tareas")
       .insert([
         {
-          titulo: titulo.trim(),
-          descripcion: descripcion.trim(),
+          titulo,
+          descripcion,
           fecha_entrega: fechaISO,
-          registro_id: usuario.id, // 👈 CLAVE CORRECTA
+          usuario_id: usuario.id,
+          entregada: false,
         },
       ])
       .select()
@@ -92,17 +96,18 @@ export function ContextoTareasProvider({ children }) {
       return;
     }
 
+    // 2️⃣ Relacionar con grupos
     const relaciones = gruposIds.map((grupoId) => ({
       tarea_id: tarea.id,
       grupo_id: grupoId,
     }));
 
-    const { error: errorRel } = await supabase
+    const { error: relError } = await supabase
       .from("tareas_grupos")
       .insert(relaciones);
 
-    if (errorRel) {
-      console.error(errorRel);
+    if (relError) {
+      console.error(relError);
       alert("Error al asignar grupos");
       return;
     }
@@ -111,25 +116,14 @@ export function ContextoTareasProvider({ children }) {
   };
 
   const eliminarTarea = async (id) => {
-    const { error } = await supabase
-      .from("tareas")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      alert("Error al eliminar tarea");
-      return;
-    }
-
-    setTareas((prev) => prev.filter((t) => t.id !== id));
+    await supabase.from("tareas").delete().eq("id", id);
+    obtenerTareas();
   };
 
   return (
     <ContextoTareas.Provider
       value={{
         tareas,
-        cargarTareas: obtenerTareas,
         agregarTarea,
         eliminarTarea,
         cargando,
