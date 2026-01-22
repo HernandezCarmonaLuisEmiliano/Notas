@@ -23,6 +23,16 @@ export default function PantallaAlumno({ navigation }) {
       await Notifications.cancelAllScheduledNotificationsAsync();
 
       if (valor !== "Nunca") {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "✅ Configuración Actualizada",
+            body: `Frecuencia seleccionada: "${valor}"`,
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.MAX,
+          },
+          trigger: null,
+        });
+
         let segundos = 86400;
         if (valor === "Cada 2 días") segundos = 172800;
         if (valor === "Semanal") segundos = 604800;
@@ -30,12 +40,17 @@ export default function PantallaAlumno({ navigation }) {
         await Notifications.scheduleNotificationAsync({
           content: {
             title: "Recordatorio de Tareas",
-            body: "Tienes actividades pendientes en tu panel. ¡No las olvides!",
+            body: "No olvides revisar tus tareas pendientes hoy.",
           },
-          trigger: { seconds: segundos, repeats: true },
+          trigger: { 
+            seconds: segundos, 
+            repeats: true 
+          },
         });
         
-        Alert.alert("Éxito", `Preferencias guardadas: ${valor}`);
+        Alert.alert("Éxito", `Se ha configurado la frecuencia: ${valor}`);
+      } else {
+        Alert.alert("Éxito", "Recordatorios desactivados");
       }
     }
   };
